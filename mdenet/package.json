@@ -24,6 +24,14 @@
       {
         "command": "panels.refresh",
         "title": "Refresh Panels"
+      },
+      {
+        "command": "activities.play",
+        "title": "Play Activity"
+      },
+      {
+        "command": "activities.stop",
+        "title": "Stop Activity"
       }
     ],
     "viewsContainers": {
