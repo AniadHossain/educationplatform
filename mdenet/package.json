@@ -15,7 +15,24 @@
     "commands": [{
       "command": "mdenet.helloWorld",
       "title": "Hello World"
-    }]
+    }],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mdenetActivity",
+          "title": "MDENet",
+          "icon": "resources/M.svg"
+        }
+      ]
+    },
+    "views":{
+      "mdenetActivity": [
+        {
+          "id": "mdenetView",
+          "name": "MDENet View"
+        }
+      ]
+    }
   },
   "scripts": {
     "lint": "eslint .",
