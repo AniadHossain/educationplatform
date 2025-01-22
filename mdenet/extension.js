@@ -1,6 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
+const TreeDataProvider = require('./src/views/TreeDataProvider');
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -9,22 +10,19 @@ const vscode = require('vscode');
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
+	const activityProvider = new TreeDataProvider(['Activity 1', 'Activity 2']);
+	const taskProvider = new TreeDataProvider(['Task 1', 'Task 2']);
+	const panelProvider = new TreeDataProvider(['Panel 1', 'Panel 2']);
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "mdenet" is now active!');
+	vscode.window.registerTreeDataProvider('activities', activityProvider);
+	vscode.window.registerTreeDataProvider('tasks', taskProvider);
+	vscode.window.registerTreeDataProvider('panels', panelProvider);
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with  registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('mdenet.helloWorld', function () {
-		// The code you place here will be executed every time your command is executed
-
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from MDENet!');
-	});
-
-	context.subscriptions.push(disposable);
+	context.subscriptions.push(
+		vscode.commands.registerCommand('activities.refresh', () => activityProvider.refresh()),
+		vscode.commands.registerCommand('tasks.refresh', () => taskProvider.refresh()),
+		vscode.commands.registerCommand('panels.refresh', () => panelProvider.refresh())
+	  );
 }
 
 // This method is called when your extension is deactivated

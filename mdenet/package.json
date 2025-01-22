@@ -12,10 +12,20 @@
   "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
-    "commands": [{
-      "command": "mdenet.helloWorld",
-      "title": "Hello World"
-    }],
+    "commands": [
+      {
+        "command": "activities.refresh",
+        "title": "Refresh Activities"
+      },
+      {
+        "command": "tasks.refresh",
+        "title": "Refresh Tasks"
+      },
+      {
+        "command": "panels.refresh",
+        "title": "Refresh Panels"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -28,8 +38,16 @@
     "views":{
       "mdenetActivity": [
         {
-          "id": "mdenetView",
-          "name": "MDENet View"
+          "id": "activities",
+          "name": "Activities"
+        },
+        {
+          "id": "tasks",
+          "name": "Tasks"
+        },
+        {
+          "id": "panels",
+          "name": "Panels"
         }
       ]
     }
