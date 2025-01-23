@@ -1,5 +1,6 @@
 const vscode = require('vscode');
 const fs = require('fs');
+const path = require('path');
 
 class LocalRepoManager {
     constructor(){
@@ -9,22 +10,29 @@ class LocalRepoManager {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
             // console.log('No workspace is opened');
-            return Promise.resolve([]);
+            this.files = [];
         }
-
-        const rootPath = workspaceFolders[0].uri.fsPath;
-        // console.log('Root path:', rootPath);
-        const files = fs
-            .readdirSync(rootPath)
-            .filter((file) => file.endsWith('activity.json') || file.endsWith('activity.yml'));
-        // console.log('Files:', files);
-
-        this.files = files;
+        else{
+            const rootPath = workspaceFolders[0].uri.fsPath;
+            this.rootPath = rootPath;
+            // console.log('Root path:', rootPath);
+            const files = fs
+                .readdirSync(rootPath)
+                .filter((file) => file.endsWith('activity.json') || file.endsWith('activity.yml'));
+            // console.log('Files:', files);
+            this.files = files;
+        }
         LocalRepoManager.instance = this;
     }
 
     getFiles(){
         return this.files;
+    }
+
+    async fetchActivityFile(fileName){
+        const filePath = path.join(this.rootPath, fileName);
+        const fileContents = await fs.promises.readFile(filePath, 'utf-8');
+        return JSON.parse(fileContents);
     }
 }
 
