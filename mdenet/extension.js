@@ -27,10 +27,10 @@ function activate(context) {
 			vscode.window.showInformationMessage(`Playing: ${file.label}`);
 			activityProvider.setPlaying(file);
 		  }),
-		  vscode.commands.registerCommand('activities.stop', (file) => {
+		vscode.commands.registerCommand('activities.stop', (file) => {
 			vscode.window.showInformationMessage(`Stopping: ${file.label}`);
 			activityProvider.setStopped(file);
-		  })
+		})
 	  );
 }
 

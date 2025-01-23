@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 const fs = require('fs');
-const path = require('path');
+const LocalRepoManager = require('../utils/LocalRepoManager');
+
 
 class ActivityTreeDataProvider{
     constructor(items) {
@@ -46,20 +47,8 @@ class ActivityTreeDataProvider{
     }
 
     getChildren() {
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders) {
-            console.log('No workspace is opened');
-            return Promise.resolve([]);
-        }
-
-        const rootPath = workspaceFolders[0].uri.fsPath;
-        console.log('Root path:', rootPath);
-        const files = fs
-            .readdirSync(rootPath)
-            .filter((file) => file.endsWith('activity.json') || file.endsWith('activity.yml'));
-        console.log('Files:', files);
-
-        return files.map((file) => ({ label: file }));
+        const localRepoManager = new LocalRepoManager();
+        return localRepoManager.getFiles().map((file) => ({ label: file }));
     }
 }
 module.exports = ActivityTreeDataProvider;
