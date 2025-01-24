@@ -3,6 +3,7 @@
 const vscode = require('vscode');
 const TreeDataProvider = require('./src/views/TreeDataProvider');
 const ActivityTreeDataProvider = require('./src/views/ActivityTreeDataProvider');
+const TaskTreeDataProvider = require('./src/views/TaskTreeDataProvider');
 const LocalRepoManager = require('./src/utils/LocalRepoManager');
 
 // This method is called when your extension is activated
@@ -14,7 +15,7 @@ const LocalRepoManager = require('./src/utils/LocalRepoManager');
 function activate(context) {
 	const localRepoManager = new LocalRepoManager();
 	const activityProvider = new ActivityTreeDataProvider();
-	const taskProvider = new TreeDataProvider(['Task 1', 'Task 2']);
+	const taskProvider = new TaskTreeDataProvider();
 	const panelProvider = new TreeDataProvider(['Panel 1', 'Panel 2']);
 
 	vscode.window.registerTreeDataProvider('activities', activityProvider);
@@ -28,8 +29,15 @@ function activate(context) {
 		vscode.commands.registerCommand('activities.play', async (file) => {
 			try {
 				const fileContents = await localRepoManager.fetchActivityFile(file.label);
+
 				// console.log('File Contents:', fileContents);
 				// vscode.window.showInformationMessage(`Fetched contents of: ${file.label}`);
+				if (fileContents.activities) {
+					taskProvider.setTasks(fileContents.activities);
+				} else {
+					vscode.window.showWarningMessage('No activities found in the file.');
+				}
+
 				activityProvider.setPlaying(file);
 			  } catch (error) {
 				vscode.window.showErrorMessage(`Error fetching file: ${error.message}`);
