@@ -6,6 +6,7 @@ const ActivityTreeDataProvider = require('./src/views/ActivityTreeDataProvider')
 const TaskTreeDataProvider = require('./src/views/TaskTreeDataProvider');
 const LocalRepoManager = require('./src/utils/LocalRepoManager');
 
+// const EducationPlatformApp =  require('../platform/src/EducationPlatformApp').EducationPlatformApp;
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 

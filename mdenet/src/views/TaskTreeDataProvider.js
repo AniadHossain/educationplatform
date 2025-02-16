@@ -17,6 +17,11 @@ class TaskTreeDataProvider {
     this.refresh();
   }
 
+  removeTasks() {
+    this.tasks = [];
+    this.refresh();
+  }
+
   /**
    * Refreshes the tree view.
    */
@@ -41,7 +46,7 @@ class TaskTreeDataProvider {
    * @returns {Promise<Array>}
    */
   async getChildren() {
-    return this.tasks.map((task) => ({label: task.id}));
+    return this.tasks.map((task) => ({label: task.title}));
   }
 }
 
