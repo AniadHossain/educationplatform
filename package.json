@@ -1,12 +1,16 @@
 {
     "name": "MDENet-Education-Platform",
     "workspaces": [
-      "platform",
-      "tokenserver",
-      "mdenet"
+        "platform",
+        "tokenserver",
+        "mdenet"
     ],
-    "overrides": { 
-      "socket.io-parser": ">=4.2.3",
-      "@octokit/webhooks": ">=10.9.2"
-    } 
-  }
+    "overrides": {
+        "socket.io-parser": ">=4.2.3",
+        "@octokit/webhooks": ">=10.9.2"
+    },
+    "devDependencies": {
+        "esbuild": "^0.25.0",
+        "fs-extra": "^11.3.0"
+    }
+}
