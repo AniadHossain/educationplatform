@@ -138,19 +138,30 @@ class ActivityManager {
         }
 
         if (fileContent != null){
-
-            let validatedConfig = this.parseAndValidateActivityConfig(fileContent);
-
-            if ( validatedConfig.errors.length == 0 ){
-
-                this.createActivitiesMenu(validatedConfig.config);
-
-            } else {
-                // Error config file parsing error
-                errors = errors.concat(validatedConfig.errors);
-            }
+            errors = this.processActivityConfig(fileContent,errors)
         } 
 
+        return errors;
+    }
+
+    /**
+     * Processes the activity configuration file content.
+     *
+     * @param {string} fileContent - The content of the activity configuration file.
+     * @param {Array} errors - An array to store any errors encountered during processing.
+     * @returns {Array} The updated array of errors after processing the configuration.
+     */
+    processActivityConfig(fileContent, errors){
+        let validatedConfig = this.parseAndValidateActivityConfig(fileContent);
+
+        if ( validatedConfig.errors.length == 0 ){
+
+            this.createActivitiesMenu(validatedConfig.config);
+
+        } else {
+            // Error config file parsing error
+            errors = errors.concat(validatedConfig.errors);
+        }
         return errors;
     }
 

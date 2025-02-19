@@ -1,0 +1,6 @@
+class EducationPlatform{
+
+    initializeActivity(){
+        
+    }
+}

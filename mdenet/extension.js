@@ -6,6 +6,7 @@ const ActivityTreeDataProvider = require('./src/views/ActivityTreeDataProvider')
 const TaskTreeDataProvider = require('./src/views/TaskTreeDataProvider');
 const LocalRepoManager = require('./src/utils/LocalRepoManager');
 const { ActivityManager } = require('../platform-commonjs/src/ActivityManager');
+const { ActivityConfigValidator } = require('../platform-commonjs/src/ActivityConfigValidator');
 console.log(require('../platform-commonjs/src/ActivityManager'));
 
 // const EducationPlatformApp =  require('../platform/src/EducationPlatformApp').EducationPlatformApp;
@@ -20,7 +21,8 @@ function activate(context) {
 	const activityProvider = new ActivityTreeDataProvider();
 	const taskProvider = new TaskTreeDataProvider();
 	const panelProvider = new TreeDataProvider(['Panel 1', 'Panel 2']);
-	const activityManager = new ActivityManager(1,1)
+	// const activityManager = new ActivityManager(1,1)
+	const activityConfigValidator = new ActivityConfigValidator();
 
 	vscode.window.registerTreeDataProvider('activities', activityProvider);
 	vscode.window.registerTreeDataProvider('tasks', taskProvider);
