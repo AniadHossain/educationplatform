@@ -236,9 +236,10 @@ class GeneralActivityManager {
     /* resolve panel refs recursively because of CompositePanels */
     resolveRef(panelList) {
         for ( let apanel of panelList ){
-                
+            
             if (apanel.file != null) {
-                apanel.url = this.getPanelFileLocation(apanel)
+                let panelURLString = this.interpolate(apanel.file);
+                apanel.url = this.getPanelFileLocation(panelURLString);
                 let file = this.fetchFile(panelURLString);
                 if (file) {
                     this.handlePanelFile(apanel,file);
@@ -260,7 +261,7 @@ class GeneralActivityManager {
         }
     }
 
-    getPanelFileLocation(panel){
+    getPanelFileLocation(panelURL){
         throw new Error("Override this method in the subclass");
     }
 

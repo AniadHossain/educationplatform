@@ -6,6 +6,7 @@ const ActivityTreeDataProvider = require('./src/views/ActivityTreeDataProvider')
 const TaskTreeDataProvider = require('./src/views/TaskTreeDataProvider');
 const LocalRepoManager = require('./src/utils/LocalRepoManager');
 const { ActivityManager } = require('../platform-commonjs/src/ActivityManager');
+const { ActivityValidator } = require('../platform-commonjs/src/ActivityValidator');
 const { ActivityConfigValidator } = require('../platform-commonjs/src/ActivityConfigValidator');
 const { ToolManager } = require('../platform-commonjs/src/ToolsManager');
 const ExtensionToolsManager = require('./src/ExtensionToolsManager');
@@ -29,6 +30,7 @@ function activate(context) {
 	const panelProvider = new TreeDataProvider(['Panel 1', 'Panel 2']);
 	const errorHandler = new ExtensionErrorHandler();
 	const toolManager = new ExtensionToolsManager(errorHandler.notify.bind(errorHandler));
+
 	
 
 	vscode.window.registerTreeDataProvider('activities', activityProvider);
@@ -56,8 +58,11 @@ function activate(context) {
 				activityProvider.setPlaying(file);
 				activityManager.initializeActivities();
 				await toolManager.setToolsUrls(activityManager.getToolUrls().add(COMMON_UTILITY_URL));
-				console.log('Fetching tools',toolManager.getTools());
 				activityManager.hideActivitiesNavEntries();
+				console.log("Activity Manager Initialized");
+				const selectedActivity = activityManager.getSelectedActivity();
+				console.log('Selected Activity:', selectedActivity);
+				console.log("Errors", ActivityValidator.validate(selectedActivity, toolManager.tools))
 			  } catch (error) {
 				vscode.window.showErrorMessage(`Error fetching file: ${error.message}`);
 			}

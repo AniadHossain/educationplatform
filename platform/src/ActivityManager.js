@@ -388,7 +388,8 @@ class ActivityManager {
         for ( let apanel of panelList ){
             
             if (apanel.file != null) {
-                apanel.url = this.getPanelFileLocation(apanel);
+                let panelURLString = this.interpolate(apanel.file);
+                apanel.url = this.getPanelFileLocation(panelURLString);
                 let file = this.fetchFile(panelURLString);
                 if (file) {
                     this.handlePanelFile(apanel,file);
@@ -410,9 +411,8 @@ class ActivityManager {
         }
     }
 
-    getPanelFileLocation(panel){
-        let panelURLString = this.interpolate(panel.file);
-        return new URL(panelURLString, this.activitiesUrl).href;
+    getPanelFileLocation(panelURL){
+        return new URL(panelURL, this.activitiesUrl).href;
     }
 
     handlePanelFile(panel,file){

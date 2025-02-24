@@ -31,8 +31,8 @@ class ExtensionActivityManager extends GeneralActivityManager {
         return errors;
     }
 
-    getPanelFileLocation(panel){
-        return panel.file;
+    getPanelFileLocation(panelURL){
+        return panelURL;
     }
 
     handlePanelFile(panel,file){
