@@ -1,54 +1,26 @@
 
 /*global $ -- jquery is externally imported*/
-import { urlParamPrivateRepo, parseConfigFile } from "./Utility.js";
-import { ActivityConfigValidator } from "./ActivityConfigValidator.js";
-import { EducationPlatformError } from "./EducationPlatformError.js";
-import {utility} from "./Utility.js"
+import { parseConfigFile } from "../src/Utility.js";
+import { ActivityConfigValidator } from "../src/ActivityConfigValidator.js";
+import { EducationPlatformError } from "../src/EducationPlatformError.js";
 
 const NAV_ID_PREFIX = "nav-entry-";
 
-class ActivityManager {
+class GeneralActivityManager {
 
     activityId;
-    visibleActivities = 15;
-    activitiesUrl;
-    customActivitiesUrl = false;
     toolsUrl;
-    customToolsUrl= false;
     configErrors = [];
     configValidator;
     activities = {};
-    activeSubMenu;
 
     accessPanelDef;
     fileHandler;
 
-    
-
     constructor( panelDefAccessor, fileHandler ) {
-
         this.configValidator = new ActivityConfigValidator();
-
         this.accessPanelDef = panelDefAccessor; // Obtain tool panel definitions from thier ID
         this.fileHandler = fileHandler;
-
-        // Retrieve the url of the activities configuration
-        var parameters = new URLSearchParams(utility.getWindowLocationSearch());
-        if (parameters.has("activities")) {
-            this.customActivitiesUrl = true;
-            this.activitiesUrl = parameters.get("activities");
-        }
-
-
-        var parameterKeys = Array.from(parameters.keys());
-
-        // Retrieve selected activity from the url parameters 
-        for (const key of parameterKeys) {
-            if (!parameters.get(key)) {
-                this.activityId = key;
-                break;
-            }
-        }
     }
 
     /**
@@ -126,22 +98,7 @@ class ActivityManager {
      * @returns errors from parsing and validation
      */
     fetchActivities() {
-        let errors = []; 
-        let fileContent
-
-        try {
-            let file = this.fileHandler.fetchFile( this.activitiesUrl , urlParamPrivateRepo() );
-            fileContent = file.content;
-        } catch (err) {
-            errors.push( new EducationPlatformError(`The activity configuration file was not accessible at: ${this.activitiesUrl}. 
-                                                    Check the activity file is available at the given url and you have the correct access rights.`) );
-        }
-
-        if (fileContent != null){
-            errors = this.processActivityConfig(fileContent,errors)
-        } 
-
-        return errors;
+        throw new Error("Override this method in the subclass");
     }
 
     /**
@@ -203,120 +160,26 @@ class ActivityManager {
      * @param {*} config valid activities configuration object
      */
     createActivitiesMenu(config){
-
-        for (const activity of config.activities) {
-
-            if (activity.id) {
-                this.storeActivity(activity);
-                this.createActivityMenuEntry(null, activity);
-            }
-            else {
-                var active = false;
-                for (const nestedActivity of activity.activities) {
-                    this.storeActivity(nestedActivity);
-                    if (nestedActivity.id == this.activityId) {
-                        active = true;
-                    }
-                }
-
-                var subMenu = this.createActivitiesSubMenu(activity.title, active);
-
-                for (const nestedActivity of activity.activities) {
-                    this.createActivityMenuEntry(subMenu, nestedActivity);
-                }
-            }
-        }
+        throw new Error("Override this method in the subclass");
     }
 
 
     subMenuNumber = 0;
 
     createActivitiesSubMenu(title, active = false) {
-        this.subMenuNumber ++;
-
-        var li = document.createElement("li");
-        if (active) {
-            li.setAttribute("class", "active-container");
-        }
-
-
-        this.appendTopLevelActivityMenuItem(li);
-        var a = document.createElement("a");
-        if (active) a.setAttribute("id", "activeActivitiesSubMenu");
-        a.setAttribute("class", "dropdown-toggle");
-        
-        a.setAttribute("href", "#");
-        li.appendChild(a);
-
-        var icon = document.createElement("span");
-        icon.setAttribute("class", "icon");
-        a.appendChild(icon);
-        
-        var mif = document.createElement("span");
-        mif.setAttribute("class", "mif-folder");
-        icon.appendChild(mif);
-
-        var caption = document.createElement("span");
-        caption.setAttribute("class", "caption");
-        caption.innerText = title;
-        a.appendChild(caption);
-
-        var menu = document.createElement("ul");
-        menu.setAttribute("class", "navview-menu stay-open");
-        menu.setAttribute("data-role", "dropdown");
-        li.appendChild(menu);
-
-        return menu;
+        throw new Error("Override this method in the subclass");
     }
 
     openActiveActivitiesSubMenu() {
-        document.getElementById("activeActivitiesSubMenu")?.click();
+        throw new Error("Override this method in the subclass");
     }
 
     createActivityMenuEntry(parent, activity) {  
-
-        // Add a link for the activity to the left hand side menu
-        var li = document.createElement("li");
-        li.setAttribute("id", NAV_ID_PREFIX + activity.id);
-        li.setAttribute("class", "no-visible"); // Start off hidden
-
-        var a = document.createElement("a");
-        a.href = "?" + activity.id;
-        if (this.customActivitiesUrl) {
-            a.href += "&activities=" + this.activitiesUrl;
-        }
-
-        if (urlParamPrivateRepo()){
-            a.href += "&privaterepo=true"
-        }
-
-        li.appendChild(a);
-
-        var icon = document.createElement("span");
-        icon.classList.add("icon");
-        a.appendChild(icon);
-
-        var mif = document.createElement("span");
-        mif.classList.add("mif-activity-16");
-        mif.classList.add("mif-" + activity.icon);
-        icon.appendChild(mif);
-
-        var caption = document.createElement("caption");
-        caption.innerHTML = activity.title;
-        caption.classList.add("caption");
-        a.appendChild(caption);
-
-        if (parent) {
-            parent.appendChild(li);
-        }
-        else {
-            this.appendTopLevelActivityMenuItem(li);
-        }
+        throw new Error("Override this method in the subclass");
     }
 
     appendTopLevelActivityMenuItem(element) {
-        var activitiesEnd = document.getElementById("examplesEnd");
-        activitiesEnd.parentNode.insertBefore(element, activitiesEnd);
+        throw new Error("Override this method in the subclass");
     }
 
     storeActivity(activity) {
@@ -367,28 +230,15 @@ class ActivityManager {
      * @param {*} someString the string to be changed
      */
     interpolate(someString) {
-        let result = someString;
-
-        for (let i = 0; i < sessionStorage.length; i++) {
-            let currentKey = sessionStorage.key(i);
-
-            if (currentKey !== "isAuthenticated") {
-                // TODO: This *assumes* this can only be a panel ID, but that may change over time,
-                // so this code may need to be improved to only allow access to panel IDs explicitly
-                // Removing trailing slash to avoid double slashes
-                result = result.replace("{{ID-" + currentKey + "}}", sessionStorage.getItem(currentKey).replace(/\/$/, ""));
-            }
-        }
-
-        return result;
+        throw new Error("Override this method in the subclass");
     }
 
     /* resolve panel refs recursively because of CompositePanels */
     resolveRef(panelList) {
         for ( let apanel of panelList ){
-            
+                
             if (apanel.file != null) {
-                apanel.url = this.getPanelFileLocation(apanel);
+                apanel.url = this.getPanelFileLocation(apanel)
                 let file = this.fetchFile(panelURLString);
                 if (file) {
                     this.handlePanelFile(apanel,file);
@@ -411,13 +261,11 @@ class ActivityManager {
     }
 
     getPanelFileLocation(panel){
-        let panelURLString = this.interpolate(panel.file);
-        return new URL(panelURLString, this.activitiesUrl).href;
+        throw new Error("Override this method in the subclass");
     }
 
     handlePanelFile(panel,file){
-        panel.file = file.content;
-        panel.sha = file.sha; 
+        throw new Error("Override this method in the subclass");
     }
 
     /**
@@ -451,10 +299,7 @@ class ActivityManager {
      * This could be an Epsilon program, a Flexmi model or an Emfatic metamodel
      */
     fetchFile(name) {
-
-        let fileUrl = new URL(name, this.activitiesUrl).href 
-
-        return this.fileHandler.fetchFile( fileUrl, urlParamPrivateRepo() );
+        throw new Error("Override this method in the subclass");
     }
 
 
@@ -520,12 +365,7 @@ class ActivityManager {
 
 
     setActivityVisibility(activityid, visible){
-
-        if (visible){
-            $("#"+ NAV_ID_PREFIX + activityid).removeClass("no-visible");
-        } else {
-            $("#"+ NAV_ID_PREFIX + activityid).addClass("no-visible");
-        }
+        throw new Error("Override this method in the subclass");
     }
 
     hasGeneratedPanel(activityId){
@@ -545,7 +385,7 @@ class ActivityManager {
     }
 
     isPanelGenerated(panelId){
-        return ( sessionStorage.getItem(panelId) != null );
+        throw new Error("Override this method in the subclass");
     }
 
     showActivitiesNavEntries(){
@@ -568,8 +408,4 @@ class ActivityManager {
 
 }
 
-
-
-
-
-export {ActivityManager};
+export {GeneralActivityManager};

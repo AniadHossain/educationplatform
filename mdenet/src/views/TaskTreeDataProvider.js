@@ -4,6 +4,7 @@ const vscode = require('vscode');
 class TaskTreeDataProvider {
   constructor() {
     this.tasks = [];
+    this.hiddenTasks = new Set();
     this._onDidChangeTreeData = new vscode.EventEmitter();
     this.onDidChangeTreeData = this._onDidChangeTreeData.event;
   }
@@ -17,10 +18,18 @@ class TaskTreeDataProvider {
     this.refresh();
   }
 
-  removeTasks() {
-    this.tasks = [];
+  hideTask(taskId){
+    this.hiddenTasks.add(taskId);
     this.refresh();
   }
+
+  showTask(taskId){
+    if (this.hiddenTasks.has(taskId)){
+      this.hiddenTasks.delete(taskId);
+      this.refresh();
+    }
+  }
+
 
   /**
    * Refreshes the tree view.
@@ -46,7 +55,9 @@ class TaskTreeDataProvider {
    * @returns {Promise<Array>}
    */
   async getChildren() {
-    return this.tasks.map((task) => ({label: task.title}));
+    return this.tasks
+              .filter((task) => !this.hiddenTasks.has(task.id))      
+              .map((task) => ({label: task.title}));
   }
 }
 

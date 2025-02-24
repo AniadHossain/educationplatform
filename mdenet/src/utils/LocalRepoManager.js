@@ -29,10 +29,11 @@ class LocalRepoManager {
         return this.files;
     }
 
-    async fetchActivityFile(fileName){
+    fetchActivityFile(fileName){
         const filePath = path.join(this.rootPath, fileName);
-        const fileContents = await fs.promises.readFile(filePath, 'utf-8');
-        return JSON.parse(fileContents);
+        // const fileContents = await fs.promises.readFile(filePath, 'utf-8');
+        const fileContents = fs.readFileSync(filePath, 'utf-8');
+        return fileContents;
     }
 }
 
