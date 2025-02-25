@@ -20,7 +20,7 @@ const ExtensionButton = require('./src/ExtensionButton');
 
 
 const COMMON_UTILITY_URL = "https://ep.mde-network.org/common/utility.json"
-// let selectedActivity = null;
+let selectedActivity = null;
 let outputLanguage = null;
 let panels = []
 
@@ -58,10 +58,10 @@ function activate(context) {
 				console.log("Tool Manager Initialized", toolManager.tools);
 				activityManager.hideActivitiesNavEntries();
 				console.log("Activity Manager Initialized");
-				const selectedActivity = activityManager.getSelectedActivity();
+				selectedActivity = activityManager.getSelectedActivity();
 				console.log('Selected Activity:', selectedActivity);
 				console.log("Errors", ActivityValidator.validate(selectedActivity, toolManager.tools))
-				// initializePanels();
+				initializePanels();
 			  } catch (error) {
 				vscode.window.showErrorMessage(`Error fetching file: ${error.message}`);
 			}
@@ -85,18 +85,26 @@ async function initializePanels(){
 		}
 	}
 
+	const test_layout = [
+		["panel-xtext", "panel-xtext"],
+		["panel-xtext"]
+	]
 	await generatePanels(panels,selectedActivity.layout.area);
+	// await generatePanels(panels,test_layout);
 }
 
 async function generatePanels(panels, layout){
-	await vscode.workspace.saveAll();
 	await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
 	for(let i = 0; i < layout.length; i++){
 		for(let j = 0; j < layout[i].length; j++){
-			const focus = (i > 0 && j == 0) ? true : false;
 			const panel = panels.find(panel => panel.getId() === layout[i][j]);
-			panel.displayPanel();
+			if (panel.type === "console"){
+				continue;
+			}
+			activeEditor = vscode.window.activeTextEditor;
+			const targetColumn = activeEditor ? activeEditor.viewColumn + 1 : vscode.ViewColumn.One; 
+			panel.displayPanel(targetColumn);
 		}
 	}
 }
@@ -164,7 +172,7 @@ function createPanelForDefinition(panel){
 					return resolvedButton;
 				});
 				panel.buttons = resolvedButtonConfigs;
-				newPanel.addButtons( Button.createButtons( resolvedButtonConfigs, panel.id));
+				newPanel.addButtons( ExtensionButton.createButtons( resolvedButtonConfigs, panel.id));
 			}
 		}
 	}

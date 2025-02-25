@@ -46,14 +46,14 @@ class ExtensionButton{
      * Create an array of buttons from an array of configurations
      * @param {object[]} buttonConfigs
      * @param {string} parentPanel  
-     * @returns {Button[]} the Button objects
+     * @returns {ExtensionButton[]} the Button objects
      */
     static createButtons(buttonConfigs, parentPanel){
 
         let buttons= [];
 
         buttonConfigs.forEach((config)=>{
-            buttons.push( new Button(config, parentPanel) );
+            buttons.push( new ExtensionButton(config, parentPanel) );
         })
 
         return buttons;
