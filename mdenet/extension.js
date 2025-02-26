@@ -4,6 +4,7 @@ const vscode = require('vscode');
 const TreeDataProvider = require('./src/views/TreeDataProvider');
 const ActivityTreeDataProvider = require('./src/views/ActivityTreeDataProvider');
 const TaskTreeDataProvider = require('./src/views/TaskTreeDataProvider');
+const PanelTreeDataProvider = require('./src/views/PanelTreeDataProvider');
 const LocalRepoManager = require('./src/utils/LocalRepoManager');
 const { ActivityManager } = require('../platform-commonjs/src/ActivityManager');
 const { ActivityValidator } = require('../platform-commonjs/src/ActivityValidator');
@@ -35,7 +36,7 @@ function activate(context) {
 	const localRepoManager = new LocalRepoManager();
 	const activityProvider = new ActivityTreeDataProvider();
 	const taskProvider = new TaskTreeDataProvider();
-	const panelProvider = new TreeDataProvider(['Panel 1', 'Panel 2']);
+	const panelProvider = new PanelTreeDataProvider();
 	const errorHandler = new ExtensionErrorHandler();
 	const toolManager = new ExtensionToolsManager(errorHandler.notify.bind(errorHandler));
 
@@ -55,13 +56,14 @@ function activate(context) {
 				activityProvider.setPlaying(file);
 				activityManager.initializeActivities();
 				await toolManager.setToolsUrls(activityManager.getToolUrls().add(COMMON_UTILITY_URL));
-				console.log("Tool Manager Initialized", toolManager.tools);
 				activityManager.hideActivitiesNavEntries();
-				console.log("Activity Manager Initialized");
 				selectedActivity = activityManager.getSelectedActivity();
-				console.log('Selected Activity:', selectedActivity);
+				// console.log('Selected Activity:', selectedActivity);
 				console.log("Errors", ActivityValidator.validate(selectedActivity, toolManager.tools))
+				console.log("ToolsURLs", toolManager.toolsUrls);
 				initializePanels();
+				const displayPanels = getVisiblePanels(panels,selectedActivity.layout.area);
+				panelProvider.setPanels(displayPanels);
 			  } catch (error) {
 				vscode.window.showErrorMessage(`Error fetching file: ${error.message}`);
 			}
@@ -69,8 +71,11 @@ function activate(context) {
 		vscode.commands.registerCommand('activities.stop', (file) => {
 			vscode.window.showInformationMessage(`Stopping: ${file.label}`);
 			activityProvider.setStopped(file);
-		})
-	  );
+		}),
+		vscode.commands.registerCommand('panels.displayPanel', (panel) => {
+			panel.displayPanel();
+		}
+	  ));
 }
 
 async function initializePanels(){
@@ -89,25 +94,36 @@ async function initializePanels(){
 		["panel-xtext", "panel-xtext"],
 		["panel-xtext"]
 	]
-	await generatePanels(panels,selectedActivity.layout.area);
+	// await generatePanels(panels,selectedActivity.layout.area);
 	// await generatePanels(panels,test_layout);
 }
 
-async function generatePanels(panels, layout){
-	await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-
+function getVisiblePanels(panels,layout){
+	let visiblePanels = [];
 	for(let i = 0; i < layout.length; i++){
 		for(let j = 0; j < layout[i].length; j++){
 			const panel = panels.find(panel => panel.getId() === layout[i][j]);
-			if (panel.type === "console"){
-				continue;
-			}
-			activeEditor = vscode.window.activeTextEditor;
-			const targetColumn = activeEditor ? activeEditor.viewColumn + 1 : vscode.ViewColumn.One; 
-			panel.displayPanel(targetColumn);
+			visiblePanels.push(panel);
 		}
 	}
+	return visiblePanels;
 }
+
+// async function generatePanels(panels, layout){
+// 	await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+
+// 	for(let i = 0; i < layout.length; i++){
+// 		for(let j = 0; j < layout[i].length; j++){
+// 			const panel = panels.find(panel => panel.getId() === layout[i][j]);
+// 			if (panel.type === "console"){
+// 				continue;
+// 			}
+// 			activeEditor = vscode.window.activeTextEditor;
+// 			const targetColumn = activeEditor ? activeEditor.viewColumn + 1 : vscode.ViewColumn.One; 
+// 			panel.displayPanel(targetColumn);
+// 		}
+// 	}
+// }
 
 function createPanelForDefinition(panel){
 	const panelDefinition = panel.ref;

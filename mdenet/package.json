@@ -32,6 +32,10 @@
       {
         "command": "activities.stop",
         "title": "Stop Activity"
+      },
+      {
+        "command": "panels.displayPanel",
+        "title": "Display Panel"
       }
     ],
     "viewsContainers": {

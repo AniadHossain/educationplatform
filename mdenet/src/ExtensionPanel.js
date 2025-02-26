@@ -15,6 +15,10 @@ class ExtensionPanel{
         this.title = title;
     }
 
+    getTitle(){
+        return this.title;
+    }
+
     addButtons(buttons){
         this.buttons = buttons;
     }

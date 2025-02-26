@@ -38,6 +38,11 @@ class PanelTreeDataProvider {
     return {
       label: element.label,
       iconPath: new vscode.ThemeIcon('layers'),
+      command: {
+        command: 'panels.displayPanel',
+        title: 'Display Panel',
+        arguments: [element.object] // Pass the panel object
+    }
     };
   }
 
@@ -46,7 +51,7 @@ class PanelTreeDataProvider {
    * @returns {Promise<Array>}
    */
   async getChildren() {
-    return this.panels.map((panel) => ({label: panel}));
+    return this.panels.map((panel) => ({label: panel.getTitle(), object: panel}));
   }
 }
 
