@@ -12,6 +12,13 @@
   "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
+    "menus": {
+      "editor/title": [{
+        "command": "panels.run",
+        
+        "group": "navigation"
+      }]
+    },
     "commands": [
       {
         "command": "activities.refresh",
@@ -36,6 +43,11 @@
       {
         "command": "panels.displayPanel",
         "title": "Display Panel"
+      },
+      {
+        "command": "panels.run",
+        "title": "Run Panel",
+        "icon": "resources/M.svg"
       }
     ],
     "viewsContainers": {

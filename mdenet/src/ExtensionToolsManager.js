@@ -33,7 +33,7 @@ class ExtensionToolsManager extends ToolManager {
                         let path = this.fetchPathByPort(url_port);
 
                         if(path != null){
-                            let base_url = utility.getBaseURL();
+                            let base_url = "https://ep.mde-network.org";
                             path = path.endsWith('/') ? path : path + '/';
                             toolUrl.url = base_url + path + url_tail;
                         }
@@ -77,7 +77,7 @@ class ExtensionToolsManager extends ToolManager {
                 let responseText = await response.text(); // Read response as text
 
                 // var toolConfig = this.rewriteUrl(utility.getBaseURL(), toolUrl.url, responseText);
-                var toolConfig = this.rewriteUrl("extension-platform", toolUrl.url, responseText);
+                var toolConfig = this.rewriteUrl("https://ep.mde-network.org", toolUrl.url, responseText);
                 // console.log("From extensionToolsManager",toolConfig);
                 // Now parse tool config
                 let validatedConfig = this.parseAndValidateToolConfig(toolConfig);

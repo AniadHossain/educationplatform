@@ -58,9 +58,9 @@ function activate(context) {
 				await toolManager.setToolsUrls(activityManager.getToolUrls().add(COMMON_UTILITY_URL));
 				activityManager.hideActivitiesNavEntries();
 				selectedActivity = activityManager.getSelectedActivity();
-				// console.log('Selected Activity:', selectedActivity);
+				console.log('Selected Activity:', selectedActivity);
 				console.log("Errors", ActivityValidator.validate(selectedActivity, toolManager.tools))
-				console.log("ToolsURLs", toolManager.toolsUrls);
+				console.log("Tools", toolManager.tools);
 				initializePanels();
 				const displayPanels = getVisiblePanels(panels,selectedActivity.layout.area);
 				panelProvider.setPanels(displayPanels);
@@ -73,9 +73,25 @@ function activate(context) {
 			activityProvider.setStopped(file);
 		}),
 		vscode.commands.registerCommand('panels.displayPanel', (panel) => {
+			console.log(panel);
 			panel.displayPanel();
 		}
-	  ));
+	  ),
+		vscode.commands.registerCommand('panels.run', async () => {
+			const options = ["Option 1", "Option 2", "Option 3"];
+			
+			// Show QuickPick menu
+			const selectedOption = await vscode.window.showQuickPick(options, {
+				placeHolder: "Select an option"
+			});
+
+			// Print the selected option
+			if (selectedOption) {
+				console.log(`You selected: ${selectedOption}`);
+			}
+			console.log('exited');
+		}
+	));
 }
 
 async function initializePanels(){
@@ -157,6 +173,7 @@ function createPanelForDefinition(panel){
 				break;
 			}
 			default:{
+				console.log()
 				console.log("Panel class not found");
 				break;
 			}

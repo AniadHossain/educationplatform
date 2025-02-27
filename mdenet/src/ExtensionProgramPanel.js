@@ -9,7 +9,6 @@ class ExtensionProgramPanel extends ExtensionPanel{
     }
 
     async displayPanel(targetColumn=vscode.ViewColumn.One){
-        console.log("Displaying Program Panel");
         let doc = null;
         if (this.fileLocation){
             doc = await vscode.workspace.openTextDocument(this.fileLocation);
