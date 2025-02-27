@@ -13,6 +13,16 @@ class ExtensionConsolePanel extends ExtensionPanel{
     displayPanel(){
         this.outputChannel.show(true);
     }
+
+    setError(str){
+        this.outputChannel.appendLine(`[Error] ${str}`);
+        this.outputChannel.show(true);
+    }
+
+    setValue(str){
+        this.outputChannel.appendLine(str);
+        this.outputChannel.show(true);
+    }
 }
 
 module.exports = ExtensionConsolePanel;

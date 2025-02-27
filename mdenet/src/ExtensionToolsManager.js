@@ -1,10 +1,12 @@
 const { ToolManager } = require('../../platform-commonjs/src/ToolsManager')
 const { utility } = require('../../platform-commonjs/src/Utility');
 const ExtensionError = require('./ExtensionError');
+const ExtensionFunctionRegistry = require('./ExtensionFunctionRegistry');
 
 class ExtensionToolsManager extends ToolManager {
     constructor() {
         super();
+        this.functionRegister = new ExtensionFunctionRegistry(this);
     }
 
     async setToolsUrls(urls){

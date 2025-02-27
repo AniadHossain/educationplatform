@@ -66,7 +66,7 @@ class ExtensionActivityManager extends GeneralActivityManager {
     }
 
     isPanelGenerated(panelId){
-        return this.context.workspaceState.get(panelId, false);
+        return (this.context.workspaceState.get(panelId) != null);
     }
 
     hideActivitiesNavEntries(){

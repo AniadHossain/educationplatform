@@ -23,7 +23,7 @@ class ExtensionButton{
         // Set button's onclick action
         if (buttonConfigObject["url"] != undefined) {
             this.type = buttonTypes.BUTTON_HELP;
-            this.action = "window.open('" + buttonConfigObject.url + "');";
+            this.action = "vscode.env.openExternal('" + buttonConfigObject.url + "');";
                            
         } else if (buttonConfigObject["actionfunction"] != undefined)  {        
             this.type = buttonTypes.BUTTON_ACTION;

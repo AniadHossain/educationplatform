@@ -24,6 +24,9 @@ const COMMON_UTILITY_URL = "https://ep.mde-network.org/common/utility.json"
 let selectedActivity = null;
 let outputLanguage = null;
 let panels = []
+let activityManager = null;
+let toolManager = null;
+let current_context = null;
 
 // const EducationPlatformApp =  require('../platform/src/EducationPlatformApp').EducationPlatformApp;
 // This method is called when your extension is activated
@@ -38,7 +41,8 @@ function activate(context) {
 	const taskProvider = new TaskTreeDataProvider();
 	const panelProvider = new PanelTreeDataProvider();
 	const errorHandler = new ExtensionErrorHandler();
-	const toolManager = new ExtensionToolsManager(errorHandler.notify.bind(errorHandler));
+	toolManager = new ExtensionToolsManager(errorHandler.notify.bind(errorHandler));
+	current_context = context;
 
 	
 
@@ -52,7 +56,7 @@ function activate(context) {
 		vscode.commands.registerCommand('panels.refresh', () => panelProvider.refresh()),
 		vscode.commands.registerCommand('activities.play', async (file) => {
 			try {
-				const activityManager = new ExtensionActivityManager((toolManager.getPanelDefinition).bind(toolManager), localRepoManager, taskProvider, context,file.label);
+				activityManager = new ExtensionActivityManager((toolManager.getPanelDefinition).bind(toolManager), localRepoManager, taskProvider, context,file.label);
 				activityProvider.setPlaying(file);
 				activityManager.initializeActivities();
 				await toolManager.setToolsUrls(activityManager.getToolUrls().add(COMMON_UTILITY_URL));
@@ -78,8 +82,15 @@ function activate(context) {
 		}
 	  ),
 		vscode.commands.registerCommand('panels.run', async () => {
-			const options = ["Option 1", "Option 2", "Option 3"];
-			
+			let options = [];
+			const selectedEditor = vscode.window.activeTextEditor;
+			const selectedPanel = panels.find(panel => panel.doc === selectedEditor.document);
+			const buttonMap = new Map();
+			//console.log("selectedPanel", selectedPanel);
+			// console.log("selectedEditor", selectedEditor);
+			if (selectedPanel){
+				options = selectedPanel.getButtons().map(button => {buttonMap.set(button.hint,button); return button.hint});
+			}
 			// Show QuickPick menu
 			const selectedOption = await vscode.window.showQuickPick(options, {
 				placeHolder: "Select an option"
@@ -87,9 +98,9 @@ function activate(context) {
 
 			// Print the selected option
 			if (selectedOption) {
-				console.log(`You selected: ${selectedOption}`);
+				const selectedButton = buttonMap.get(selectedOption);
+				eval(selectedButton.action);
 			}
-			console.log('exited');
 		}
 	));
 }
@@ -143,7 +154,6 @@ function getVisiblePanels(panels,layout){
 
 function createPanelForDefinition(panel){
 	const panelDefinition = panel.ref;
-	console.log("Panel Definition", panelDefinition);
 	var newPanel = null;
 	const newPanelId = panel.id;
 
@@ -152,6 +162,7 @@ function createPanelForDefinition(panel){
 		switch(panelDefinition.panelclass){
 			case "ProgramPanel":{
 				newPanel = new ExtensionProgramPanel(newPanelId,panel.file);
+				newPanel.setType(panelDefinition.language);
 				break;
 			}
 			case "ConsolePanel":{
@@ -210,6 +221,226 @@ function createPanelForDefinition(panel){
 		}
 	}
 	return newPanel
+}
+
+function runAction(source, sourceButton){
+	// Get the action
+	var action = activityManager.getActionForCurrentActivity(source, sourceButton);
+       
+	if (!action){
+		vscode.window.showInformationMessage("No action found");
+
+	} else {
+		// Action found so try and invoke
+		let buttonConfig;
+		
+		if(action.source.buttons){
+			//Buttons defined by activity
+			buttonConfig = action.source.buttons.find (btn => btn.id == sourceButton);
+		} else {
+			//Buttons defined by tool
+			console.log("button config found in tool")
+			buttonConfig = action.source.ref.buttons.find (btn => btn.id == sourceButton);
+		}  
+
+		// Create map containing panel values
+		let parameterMap = new Map();
+
+		for (let paramName of Object.keys(action.parameters)){
+
+			let param = {};
+			const panelId = action.parameters[paramName].id;
+			
+			if (panelId) { 
+				const panel = activityManager.findPanel(panelId, panels);
+				param.type = panel.getType();
+				param.value = panel.getValue();
+
+			} else {
+				// No panel with ID so it use as the parameter value
+				const parameterValue = action.parameters[paramName];
+				param.type = 'text';
+				param.value = parameterValue;
+			}
+
+			parameterMap.set(paramName, param);
+		}
+
+		// Add the platform language parameter
+		let languageParam = {};
+		languageParam.type = "text";
+		languageParam.value = action.source.ref.language; // Source panel language
+		parameterMap.set("language", languageParam);
+
+			// TODO support output and language 
+			//actionRequestData.outputType = outputType;
+			//actionRequestData.outputLanguage = outputLanguage;
+
+		// Call backend conversion and service functions
+		let actionResultPromise = toolManager.invokeActionFunction(buttonConfig.actionfunction, parameterMap);
+
+		handleResponseActionFunction(action , actionResultPromise);
+		// log the response
+		// actionResultPromise.then((response) => {
+		// 	console.log("Response", response);
+		// });
+		vscode.window.showInformationMessage("Executing program");
+	}
+}
+
+/**
+     * Handle the response from the remote tool service
+     * 
+     * @param {Object} action 
+     * @param {Promise} requestPromise
+     */
+function handleResponseActionFunction(action, requestPromise){
+        
+	requestPromise.then( (responseText) => {
+
+		var response = JSON.parse(responseText);
+		console.log("Response", response);
+		const outputPanel = activityManager.findPanel( action.output.id, panels);
+
+		var outputConsole;
+		if (action.outputConsole != null){
+			outputConsole = activityManager.findPanel(action.outputConsole.id, panels);
+		} else {
+			outputConsole = outputPanel;
+		}
+
+		if ( Object.prototype.hasOwnProperty.call(response, "error")) {
+			outputConsole.setError(response.error);
+		} else {
+
+			var responseDiagram = Object.keys(response).find( key => key.toLowerCase().includes("diagram") );
+
+			if (response.output) {
+				// Text
+				outputConsole.setValue(response.output)  
+			}
+			
+			if (response.editorUrl) {
+				// Language workbench
+				vscode.window.showInformationMessage("Building editor");
+				checkEditorReady( response.editorStatusUrl, response.editorUrl, action.source.editorPanel, action.source.editorActivity, outputConsole);
+				
+
+			} else if (responseDiagram != undefined) {
+			
+				outputPanel.renderDiagram( response[responseDiagram] );
+				
+			} else if (response.generatedFiles) {
+				// Multiple text files
+				outputPanel.setGeneratedFiles(response.generatedFiles);
+
+			} else if (response.generatedText) {
+				// Generated file
+
+				switch (action.outputType){
+					case "code":
+						// Text
+						outputPanel.getEditor().setValue(response.generatedText.trim(), 1);
+						break;
+
+					case "html":
+						// Html
+						outputPanel.setOutput(response.output);
+						var iframe = document.getElementById("htmlIframe");
+						if (iframe == null) {
+							iframe = document.createElement("iframe");
+							iframe.id = "htmlIframe"
+							iframe.style.height = "100%";
+							iframe.style.width = "100%";
+							document.getElementById(outputPanel.getId() + "Diagram").appendChild(iframe);
+						}
+						
+						iframe.srcdoc = response.generatedText;
+						break; 
+
+					case "puml": 
+					case "dot":
+						// UML or Graph
+						let krokiEndpoint = action.outputType === "puml" ? "plantuml" : "graphviz/svg";
+
+						fetch(`https://kroki.io/${krokiEndpoint}`, {
+							method: "POST",
+							headers: {
+								"Accept": "image/svg+xml",
+								"Content-Type": "text/plain"
+							},
+							body: response.generatedText
+						})
+						.then(response => {
+							if (!response.ok) {
+								throw new Error(`HTTP error! Status: ${response.status}`);
+							}
+							return response.text(); // Expecting an SVG response
+						})
+						.then(svgData => {
+							outputPanel.renderDiagram(svgData);
+						})
+						.catch(error => {
+							console.error("Error fetching diagram:", error);
+						});
+						break;
+
+						default:
+							console.log("Unknown output type: " + action.outputType);
+				}
+			}
+
+		} 
+	}).catch( (err) => {
+		vscode.window.showErrorMessage("Error executing action: " + err);
+	});
+
+}
+
+/**
+     * Poll for editor to become available. 
+     * @param {String} statusUrl - the url for checking the status of the editor panel.
+     * @param {String} editorInstanceUrl - the editor instance's url. 
+     * @param {String} editorPanelId - the id of the editor panel.
+     * @param {String} editorActivityId - TODO remove as this can be found using editorPanelId to save having to specify in config.
+     * @param {Panel} logPanel - the panel to log progress to.
+     */
+async function checkEditorReady(statusUrl, editorInstanceUrl, editorPanelId, editorActivityId, logPanel){
+	console.log("Checking editor ready: " + statusUrl);
+	let response  = await fetch(statusUrl);
+
+	if (response.status == 200){ 
+		const result = await response.json();
+
+		if (result.output){
+			logPanel.setValue(result.output);
+		}
+		
+		if (result.error){
+			// Unsuccessful
+			console.log("Editor failed start.");
+			current_context.workspaceState.update(editorPanelId, null);
+			activityManager.setActivityVisibility(editorActivityId, false);
+			vscode.window.showErrorMessage("Failed to start the editor.");
+
+		} else if (!result.editorReady){
+			await new Promise(resolve => setTimeout(resolve, 2000));
+			await checkEditorReady(statusUrl, editorInstanceUrl, editorPanelId, editorActivityId, logPanel);
+
+		} else {
+			// Successful 
+			console.log("Editor ready.");
+			current_context.workspaceState.update( editorPanelId , editorInstanceUrl );
+			console.log("Workspace state", current_context.workspaceState);
+			activityManager.setActivityVisibility(editorActivityId, true);
+			PlaygroundUtility.successNotification("Building complete.");
+			vscode.window.showInformationMessage("Building complete.");
+		}
+
+	} else {
+		console.log("ERROR: The editor response could not be checked: " + statusUrl);
+		vscode.window.showErrorMessage("Failed to start the editor.");
+	}
 }
 
 // This method is called when your extension is deactivated
