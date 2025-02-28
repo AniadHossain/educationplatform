@@ -18,6 +18,8 @@ const ExtensionConsolePanel = require('./src/ExtensionConsolePanel');
 const ExtensionCompositePanel = require('./src/ExtensionCompositePanel');
 const ExtensionOutputPanel = require('./src/ExtensionOutputPanel');
 const ExtensionButton = require('./src/ExtensionButton');
+const WebSocket = require('ws');
+const fs = require('fs');
 
 
 const COMMON_UTILITY_URL = "https://ep.mde-network.org/common/utility.json"
@@ -43,6 +45,7 @@ function activate(context) {
 	const errorHandler = new ExtensionErrorHandler();
 	toolManager = new ExtensionToolsManager(errorHandler.notify.bind(errorHandler));
 	current_context = context;
+	console.log("Current context state", current_context.workspaceState.keys());
 
 	
 
@@ -56,6 +59,9 @@ function activate(context) {
 		vscode.commands.registerCommand('panels.refresh', () => panelProvider.refresh()),
 		vscode.commands.registerCommand('activities.play', async (file) => {
 			try {
+				// context.workspaceState.keys().forEach(key => {
+				// 	context.workspaceState.update(key, null);
+				// });
 				activityManager = new ExtensionActivityManager((toolManager.getPanelDefinition).bind(toolManager), localRepoManager, taskProvider, context,file.label);
 				activityProvider.setPlaying(file);
 				activityManager.initializeActivities();
@@ -65,7 +71,7 @@ function activate(context) {
 				console.log('Selected Activity:', selectedActivity);
 				console.log("Errors", ActivityValidator.validate(selectedActivity, toolManager.tools))
 				console.log("Tools", toolManager.tools);
-				initializePanels();
+				await initializePanels();
 				const displayPanels = getVisiblePanels(panels,selectedActivity.layout.area);
 				panelProvider.setPanels(displayPanels);
 			  } catch (error) {
@@ -73,8 +79,31 @@ function activate(context) {
 			}
 		  }),
 		vscode.commands.registerCommand('activities.stop', (file) => {
+			// context.workspaceState.keys().forEach(key => {
+			// 	context.workspaceState.update(key, null);
+			// });
 			vscode.window.showInformationMessage(`Stopping: ${file.label}`);
 			activityProvider.setStopped(file);
+			//refresh all providers
+			panelProvider.setPanels([]);
+			taskProvider.setTasks([]);
+			//close all editors
+			vscode.commands.executeCommand('workbench.action.closeAllEditors');
+		}),
+		vscode.commands.registerCommand('tasks.select', async (task) => {
+			if(selectedActivity && task === selectedActivity.id){
+				console.log("Task already selected");
+				return;
+			}
+			activityManager.setSelectedActivity(task);
+			selectedActivity = activityManager.getSelectedActivity();
+			// console.log('Selected Activity:', selectedActivity);
+			// console.log("Tools", toolManager.tools);
+			console.log("initialize panels")
+			await initializePanels();
+			console.log("executing display panels")
+			const displayPanels = getVisiblePanels(panels,selectedActivity.layout.area);
+			panelProvider.setPanels(displayPanels);
 		}),
 		vscode.commands.registerCommand('panels.displayPanel', (panel) => {
 			console.log(panel);
@@ -84,6 +113,11 @@ function activate(context) {
 		vscode.commands.registerCommand('panels.run', async () => {
 			let options = [];
 			const selectedEditor = vscode.window.activeTextEditor;
+			if(!selectedEditor){
+				vscode.window.showInformationMessage("Press the buttons inside the panel");
+				return;
+			}
+			console.log(selectedEditor);
 			const selectedPanel = panels.find(panel => panel.doc === selectedEditor.document);
 			const buttonMap = new Map();
 			//console.log("selectedPanel", selectedPanel);
@@ -111,7 +145,9 @@ async function initializePanels(){
 	}
 
 	for (let apanel of selectedActivity.panels){
-		var newPanel = createPanelForDefinition(apanel); // panel objects
+		console.log("Creating panel", apanel);
+		var newPanel = await createPanelForDefinition(apanel); // panel objects
+		console.log("finished creating panel", newPanel);
 		if (newPanel != null){
 			panels.push(newPanel);
 		}
@@ -152,7 +188,7 @@ function getVisiblePanels(panels,layout){
 // 	}
 // }
 
-function createPanelForDefinition(panel){
+async function createPanelForDefinition(panel){
 	const panelDefinition = panel.ref;
 	var newPanel = null;
 	const newPanelId = panel.id;
@@ -162,6 +198,7 @@ function createPanelForDefinition(panel){
 		switch(panelDefinition.panelclass){
 			case "ProgramPanel":{
 				newPanel = new ExtensionProgramPanel(newPanelId,panel.file);
+				await newPanel.initialize();
 				newPanel.setType(panelDefinition.language);
 				break;
 			}
@@ -173,15 +210,23 @@ function createPanelForDefinition(panel){
 				newPanel = new ExtensionCompositePanel(newPanelId);
 				if(panel.childPanels){
 					for (let childPanelConfig of panel.childPanels){
-						var childPanel = createPanelForDefinition(childPanelConfig);
+						var childPanel = await createPanelForDefinition(childPanelConfig);
 						newPanel.addPanel(childPanel);
 					}
 				}
 				break;
 			}
 			case "OutputPanel":{
-				newPanel = new ExtensionOutputPanel(newPanelId);
+				console.log(panel)
+				newPanel = new ExtensionOutputPanel(newPanelId,panel.name);
 				break;
+			}
+			case "XtextEditorPanel":{
+				let editorUrl = current_context.workspaceState.get(newPanelId);
+				newPanel = new ExtensionProgramPanel(newPanelId,panel.file);
+				await newPanel.initialize();
+				newPanel.setType(panelDefinition.language);
+				break
 			}
 			default:{
 				console.log()
@@ -253,6 +298,7 @@ function runAction(source, sourceButton){
 			
 			if (panelId) { 
 				const panel = activityManager.findPanel(panelId, panels);
+				console.log("panel found",panel)
 				param.type = panel.getType();
 				param.value = panel.getValue();
 
@@ -299,7 +345,6 @@ function handleResponseActionFunction(action, requestPromise){
 	requestPromise.then( (responseText) => {
 
 		var response = JSON.parse(responseText);
-		console.log("Response", response);
 		const outputPanel = activityManager.findPanel( action.output.id, panels);
 
 		var outputConsole;
@@ -323,11 +368,10 @@ function handleResponseActionFunction(action, requestPromise){
 			if (response.editorUrl) {
 				// Language workbench
 				vscode.window.showInformationMessage("Building editor");
-				checkEditorReady( response.editorStatusUrl, response.editorUrl, action.source.editorPanel, action.source.editorActivity, outputConsole);
+				checkEditorReady( response.editorID, response.editorUrl, action.source.editorPanel, action.source.editorActivity, outputConsole);
 				
 
 			} else if (responseDiagram != undefined) {
-			
 				outputPanel.renderDiagram( response[responseDiagram] );
 				
 			} else if (response.generatedFiles) {
@@ -398,48 +442,45 @@ function handleResponseActionFunction(action, requestPromise){
 }
 
 /**
-     * Poll for editor to become available. 
-     * @param {String} statusUrl - the url for checking the status of the editor panel.
-     * @param {String} editorInstanceUrl - the editor instance's url. 
-     * @param {String} editorPanelId - the id of the editor panel.
-     * @param {String} editorActivityId - TODO remove as this can be found using editorPanelId to save having to specify in config.
-     * @param {Panel} logPanel - the panel to log progress to.
-     */
-async function checkEditorReady(statusUrl, editorInstanceUrl, editorPanelId, editorActivityId, logPanel){
-	console.log("Checking editor ready: " + statusUrl);
-	let response  = await fetch(statusUrl);
+ * Open a websockets connection to receive status updates on editor build. 
+ * @param {String} statusUrl - the url for checking the status of the editor panel.
+ * @param {String} editorInstanceUrl - the editor instance's url. 
+ * @param {String} editorPanelId - the id of the editor panel.
+ * @param {String} editorActivityId - TODO remove as this can be found using editorPanelId to save having to specify in config.
+ * @param {Panel} logPanel - the panel to log progress to.
+ */
+function checkEditorReady(editorID, editorInstanceUrl, editorPanelId, editorActivityId, logPanel){
+	var socket = new WebSocket("wss://ep.mde-network.org/tools/xtext/services/xtext/ws");
+	var editorReady = false;
+	socket.onopen = function(){
+		socket.send(editorID);
+	};
 
-	if (response.status == 200){ 
-		const result = await response.json();
-
-		if (result.output){
-			logPanel.setValue(result.output);
+	socket.onmessage = function(e){
+		var resultData = JSON.parse(e.data);
+		if (resultData.output){
+			logPanel.setValue(resultData.output);
 		}
-		
-		if (result.error){
-			// Unsuccessful
-			console.log("Editor failed start.");
-			current_context.workspaceState.update(editorPanelId, null);
-			activityManager.setActivityVisibility(editorActivityId, false);
-			vscode.window.showErrorMessage("Failed to start the editor.");
-
-		} else if (!result.editorReady){
-			await new Promise(resolve => setTimeout(resolve, 2000));
-			await checkEditorReady(statusUrl, editorInstanceUrl, editorPanelId, editorActivityId, logPanel);
-
-		} else {
-			// Successful 
-			console.log("Editor ready.");
-			current_context.workspaceState.update( editorPanelId , editorInstanceUrl );
-			console.log("Workspace state", current_context.workspaceState);
+		if(resultData.editorReady){
+			editorReady = true;
+			socket.close();
+			current_context.workspaceState.update(editorPanelId, editorInstanceUrl);
 			activityManager.setActivityVisibility(editorActivityId, true);
-			PlaygroundUtility.successNotification("Building complete.");
-			vscode.window.showInformationMessage("Building complete.");
+			vscode.window.showInformationMessage("Building Complete");
 		}
+	}
 
-	} else {
-		console.log("ERROR: The editor response could not be checked: " + statusUrl);
-		vscode.window.showErrorMessage("Failed to start the editor.");
+	socket.onclose = function(){
+		//If editor is not deployed, a new connection must be established.
+		if (!editorReady){
+			if(!socket || socket.readyState == 3){
+				checkEditorReady(editorID, editorInstanceUrl, editorPanelId, editorActivityId, logPanel);
+			}
+		}
+	}
+
+	if(!socket || socket.readyState == 3){
+		checkEditorReady(editorID, editorInstanceUrl, editorPanelId, editorActivityId, logPanel);
 	}
 }
 

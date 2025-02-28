@@ -40,7 +40,8 @@ class ExtensionActivityManager extends GeneralActivityManager {
     }
 
     fetchFile(filePath){
-        return vscode.workspace.workspaceFolders[0].uri.fsPath + '/' + filePath;
+        //if filePath starts with http or https, it is a URL so just return it
+        return filePath
     }
 
     createActivitiesMenu(config){
@@ -85,7 +86,7 @@ class ExtensionActivityManager extends GeneralActivityManager {
         const storedKeys = this.context.workspaceState.keys();
 
         for (let currentKey of storedKeys) {
-            if (currentKey !== "isAuthenticated") {
+            if (currentKey !== "isAuthenticated" && this.context.workspaceState.get(currentKey) !== null) {
                 // Retrieve stored value
                 let storedValue = this.context.workspaceState.get(currentKey, "").replace(/\/$/, ""); // Remove trailing slash
 
@@ -95,6 +96,10 @@ class ExtensionActivityManager extends GeneralActivityManager {
         }
 
         return result;
+    }
+
+    setSelectedActivity(activityId){
+        this.activityId = activityId;
     }
 }
 

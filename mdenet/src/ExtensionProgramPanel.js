@@ -7,17 +7,21 @@ class ExtensionProgramPanel extends ExtensionPanel{
         this.fileLocation = fileLocation;
         this.doc = null;
     }
-
-    async displayPanel(targetColumn=vscode.ViewColumn.One){
+    async initialize(){
         let doc = null;
-        if (this.fileLocation){
-            doc = await vscode.workspace.openTextDocument(this.fileLocation);
+        if (this.fileLocation && !this.fileLocation.startsWith('http') && !this.fileLocation.startsWith('https')){
+            console.log('Opening file: ' + vscode.workspace.workspaceFolders[0].uri.fsPath + '/' + this.fileLocation);
+            doc = await vscode.workspace.openTextDocument(vscode.workspace.workspaceFolders[0].uri.fsPath + '/' + this.fileLocation);
         }
         else{
+            console.log('Opening URL: ' + this.fileLocation);
             doc = await vscode.workspace.openTextDocument();
         }
         this.doc = doc;
-        await vscode.window.showTextDocument(doc, { preview: false, viewColumn: targetColumn });
+    }
+
+    async displayPanel(targetColumn=vscode.ViewColumn.One){
+        await vscode.window.showTextDocument(this.doc, { preview: false, viewColumn: targetColumn });
     }
 
     getValue(){

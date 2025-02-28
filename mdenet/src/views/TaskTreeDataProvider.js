@@ -47,6 +47,11 @@ class TaskTreeDataProvider {
     return {
       label: element.label,
       iconPath: new vscode.ThemeIcon('tasklist'),
+      command: {
+        command: 'tasks.select',
+        title: 'Select Task',
+        arguments: [element.id] // Pass the task object
+      }
     };
   }
 
@@ -57,7 +62,7 @@ class TaskTreeDataProvider {
   async getChildren() {
     return this.tasks
               .filter((task) => !this.hiddenTasks.has(task.id))      
-              .map((task) => ({label: task.title}));
+              .map((task) => ({label: task.title, id: task.id}));
   }
 }
 
